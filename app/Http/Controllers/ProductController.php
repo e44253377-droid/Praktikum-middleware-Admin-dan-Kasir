@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Product;
@@ -71,8 +72,8 @@ class ProductController extends Controller
         $barcodeRule = 'nullable|string|max:100|unique:products,barcode';
 
         if ($product) {
-            $codeRule .= ',' . $product->id;
-            $barcodeRule .= ',' . $product->id;
+            $codeRule .= ','.$product->id;
+            $barcodeRule .= ','.$product->id;
         }
 
         $data = $request->validate([

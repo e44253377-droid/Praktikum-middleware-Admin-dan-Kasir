@@ -6,14 +6,17 @@ use App\Models\HeldTransaction;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 class TransactionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $products = Product::where('is_active', true)->orderBy('name')->get();
 
@@ -25,12 +28,16 @@ class TransactionController extends Controller
                     'name' => $product->name,
                     'code' => $product->pos_code,
                     'barcode' => $product->barcode,
-                    'image' => $product->image ? asset('storage/' . $product->image) : null,
+                    'image' => $product->image
+                        ? (str_starts_with($product->image, 'images/')
+                            ? asset($product->image)
+                            : asset('storage/'.$product->image))
+                        : null,
                     'price' => (float) $product->price,
                     'stock' => $product->stock,
                 ];
             })->values()->all(),
-            'heldTransactions' => HeldTransaction::latest()->get(),
+            'heldTransactions' => $this->heldTransactionsFor($request->user()),
             'transactionNumber' => $this->nextTransactionNumber(),
         ]);
     }
@@ -123,6 +130,7 @@ class TransactionController extends Controller
     public function receipt(Transaction $transaction)
     {
         $transaction->load(['details', 'cashier']);
+
         return view('transactions.receipt', compact('transaction'));
     }
 
@@ -135,37 +143,57 @@ class TransactionController extends Controller
 
         HeldTransaction::create([
             'user_id' => Auth::id(),
-            'label' => $data['label'] ?: 'Transaksi ' . now()->format('H:i'),
+            'label' => $data['label'] ?: 'Transaksi '.now()->format('H:i'),
             'payload' => $data['payload'],
         ]);
 
         return response()->json(['message' => 'Transaksi ditahan.']);
     }
 
-    public function held()
+    public function held(Request $request)
     {
-        return response()->json(HeldTransaction::latest()->get());
+        Gate::authorize('viewAny', HeldTransaction::class);
+
+        return response()->json($this->heldTransactionsFor($request->user()));
     }
 
     public function resume(HeldTransaction $heldTransaction)
     {
+        Gate::authorize('update', $heldTransaction);
+
         $payload = $heldTransaction->payload;
         $heldTransaction->delete();
+
         return response()->json(['payload' => $payload]);
     }
 
     public function cancel(HeldTransaction $heldTransaction)
     {
+        Gate::authorize('delete', $heldTransaction);
+
         $heldTransaction->delete();
+
         return response()->json(['message' => 'Transaksi ditahan dihapus.']);
+    }
+
+    private function heldTransactionsFor(User $user): Collection
+    {
+        $query = HeldTransaction::latest();
+
+        if (! $user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query->get();
     }
 
     private function nextTransactionNumber(): string
     {
-        $prefix = 'TRX-' . now()->format('Ymd') . '-';
-        $last = Transaction::where('transaction_number', 'like', $prefix . '%')
+        $prefix = 'TRX-'.now()->format('Ymd').'-';
+        $last = Transaction::where('transaction_number', 'like', $prefix.'%')
             ->orderByDesc('transaction_number')->value('transaction_number');
         $sequence = $last ? ((int) substr($last, -3)) + 1 : 1;
-        return $prefix . str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
+
+        return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
     }
 }

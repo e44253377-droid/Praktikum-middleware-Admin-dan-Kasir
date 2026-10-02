@@ -13,6 +13,5 @@ body{font:12px/1.4 Arial,sans-serif;margin:0;color:#111}.receipt{width:72mm;marg
     <div class="receipt-actions">
         <button class="print-button" onclick="window.print()">Cetak Lagi</button>
         <a class="back-button" href="{{ route('transactions.index') }}">Kembali ke Kasir</a>
-        <a class="back-button secondary" href="{{ route('dashboard') }}">Dashboard</a>
     </div>
 </div></body></html>

@@ -25,9 +25,11 @@
     <nav class="nav">
         <div class="brand"><span class="brand-mark">☕</span> CAFFE KITA</div>
         <div class="nav-links">
-            <a href="#cerita">Tentang Kami</a><a href="#menu">Menu</a>
+            <a href="#cerita">Tentang Kami</a><a href="{{ route('menu.index') }}">Menu</a>
             @auth
-                <a class="login" href="{{ route('dashboard') }}">Buka Dashboard</a>
+                <a class="login" href="{{ auth()->user()->isCashier() ? route('transactions.index') : route('dashboard') }}">
+                    {{ auth()->user()->isCashier() ? 'Buka Kasir' : 'Buka Dashboard' }}
+                </a>
             @else
                 <a class="login" href="{{ route('login') }}">Masuk</a>
             @endauth
@@ -40,11 +42,13 @@
             <p>Selamat datang di CAFFE KITA. Tempat kecil dengan rasa yang besar, diracik segar untuk menemani pagi, istirahat, dan obrolan panjang Anda.</p>
             <div class="hero-actions">
                 @auth
-                    <a class="button primary" href="{{ route('dashboard') }}">Masuk ke aplikasi <span>→</span></a>
+                    <a class="button primary" href="{{ auth()->user()->isCashier() ? route('transactions.index') : route('dashboard') }}">
+                        {{ auth()->user()->isCashier() ? 'Masuk ke kasir' : 'Masuk ke dashboard' }} <span>→</span>
+                    </a>
                 @else
                     <a class="button primary" href="{{ route('login') }}">Mulai sekarang <span>→</span></a>
                 @endauth
-                <a class="button secondary" href="#menu">Lihat menu kami</a>
+                <a class="button secondary" href="{{ route('menu.index') }}">Lihat menu kami</a>
             </div>
         </section>
         <section class="visual" aria-label="Ilustrasi kopi CAFFE KITA">

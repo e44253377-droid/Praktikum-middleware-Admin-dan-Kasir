@@ -24,7 +24,9 @@
                 <p>Berikut ringkasan aktivitas toko hari ini.</p>
                 </div>
             </div>
-            <a href="{{ route('products.index') }}" class="admin-button">Kelola Produk <span>→</span></a>
+            @can('manage-products')
+                <a href="{{ route('products.index') }}" class="admin-button">Kelola Produk <span>→</span></a>
+            @endcan
         </section>
 
         <section class="admin-stat-grid">
@@ -74,7 +76,9 @@
             <article class="admin-panel stock-panel">
                 <div class="admin-panel-heading">
                     <div><h3>Stok Menipis</h3><p>Produk dengan stok maksimal 5</p></div>
-                    <a href="{{ route('products.index') }}">Lihat semua <span>→</span></a>
+                    @can('manage-products')
+                        <a href="{{ route('products.index') }}">Lihat semua <span>→</span></a>
+                    @endcan
                 </div>
                 <div class="stock-list">
                     @forelse($lowStockProducts as $product)

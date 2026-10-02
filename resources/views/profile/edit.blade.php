@@ -6,7 +6,7 @@
                 <h2>Pengaturan Akun</h2>
                 <p>Kelola identitas akun dan keamanan akses CAFFE KITA.</p>
             </div>
-            <a href="{{ route('dashboard') }}" class="settings-back">← Kembali</a>
+            <a href="{{ auth()->user()->isCashier() ? route('transactions.index') : route('dashboard') }}" class="settings-back">← Kembali</a>
         </div>
     </x-slot>
 

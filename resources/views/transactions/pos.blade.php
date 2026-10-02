@@ -16,7 +16,7 @@
                     @endif
                     <span class="cashier-profile-name">{{ auth()->user()->name }}</span>
                 </a>
-                <a href="{{ route('dashboard') }}" class="back-dashboard">← Kembali</a>
+                <a href="{{ url('/') }}" class="back-dashboard">← Kembali</a>
                 <div class="transaction-meta">
                     <strong>{{ $transactionNumber }}</strong>
                     <span>{{ now()->format('d/m/Y H:i') }}</span>

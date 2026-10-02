@@ -11,7 +11,9 @@
   <h1 class="font-black text-2xl text-amber-900">CAFFE KITA 🍽️</h1>
   <div class="flex items-center gap-3">
     <a href="{{ route('dashboard') }}" class="border border-amber-900 text-amber-900 px-4 py-2 rounded-full text-sm font-bold hover:bg-amber-50 transition">← Dashboard Admin</a>
-    <a href="{{ route('products.create') }}" class="bg-amber-900 text-white px-4 py-2 rounded-full text-sm font-bold">+ Tambah Menu</a>
+    @can('manage-products')
+      <a href="{{ route('products.create') }}" class="bg-amber-900 text-white px-4 py-2 rounded-full text-sm font-bold">+ Tambah Menu</a>
+    @endcan
   </div>
 </div>
 
@@ -49,10 +51,12 @@
         <p class="text-[11px] text-amber-800/50 mt-1 capitalize">{{ $product->category ?: 'Tanpa kategori' }} · {{ $product->pos_code }}</p>
         <div class="flex justify-between items-center mt-3">
           <p class="font-black text-green-600 text-sm">Rp {{ number_format($product->price,0,',','.') }}</p>
-          <div class="flex gap-1">
-            <a href="{{ route('products.edit',$product->id) }}" class="bg-amber-100 text-amber-900 w-7 h-7 flex items-center justify-center rounded-full text-xs">✏️</a>
-            <form action="{{ route('products.destroy',$product->id) }}" method="POST">@csrf @method('DELETE')<button class="bg-red-100 text-red-600 w-7 h-7 flex items-center justify-center rounded-full text-xs">🗑️</button></form>
-          </div>
+          @can('manage-products')
+            <div class="flex gap-1">
+              <a href="{{ route('products.edit',$product->id) }}" class="bg-amber-100 text-amber-900 w-7 h-7 flex items-center justify-center rounded-full text-xs">✏️</a>
+              <form action="{{ route('products.destroy',$product->id) }}" method="POST">@csrf @method('DELETE')<button class="bg-red-100 text-red-600 w-7 h-7 flex items-center justify-center rounded-full text-xs">🗑️</button></form>
+            </div>
+          @endcan
         </div>
       </div>
     </div>

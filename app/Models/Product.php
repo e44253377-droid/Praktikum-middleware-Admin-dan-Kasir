@@ -25,6 +25,6 @@ class Product extends Model
 
     public function getPosCodeAttribute(): string
     {
-        return $this->code ?: 'PRD-' . str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
+        return $this->code ?: 'PRD-'.str_pad((string) $this->id, 5, '0', STR_PAD_LEFT);
     }
 }

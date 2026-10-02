@@ -17,14 +17,32 @@ class EmailVerificationTest extends TestCase
     {
         $user = User::factory()->unverified()->create();
 
-        $response = $this->actingAs($user)->get('/verify-email');
+        $response = $this->actingAs($user)->get('/verify-email?show=1');
 
         $response->assertStatus(200);
     }
 
+    public function test_unverified_cashier_is_redirected_from_verification_prompt_to_cashier_page(): void
+    {
+        $cashier = User::factory()->unverified()->create(['role' => 'cashier']);
+
+        $this->actingAs($cashier)
+            ->get('/verify-email')
+            ->assertRedirect(route('transactions.index', absolute: false));
+    }
+
+    public function test_unverified_admin_is_redirected_from_verification_prompt_to_dashboard(): void
+    {
+        $admin = User::factory()->unverified()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get('/verify-email')
+            ->assertRedirect(route('dashboard', absolute: false));
+    }
+
     public function test_email_can_be_verified(): void
     {
-        $user = User::factory()->unverified()->create();
+        $user = User::factory()->unverified()->create(['role' => 'cashier']);
 
         Event::fake();
 
@@ -38,7 +56,7 @@ class EmailVerificationTest extends TestCase
 
         Event::assertDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+        $response->assertRedirect(route('transactions.index', absolute: false).'?verified=1');
     }
 
     public function test_email_is_not_verified_with_invalid_hash(): void
