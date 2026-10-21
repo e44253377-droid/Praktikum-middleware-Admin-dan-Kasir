@@ -6,7 +6,6 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TransactionController;
 use App\Models\Product;
 use App\Models\Transaction;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,31 +14,26 @@ Route::get('/', function () {
 
 Route::get('/menu', [MenuController::class, 'index'])->name('menu.index');
 
-Route::get('/dashboard', function () {
-    if (auth()->user()->isCashier()) {
-        return redirect()->route('transactions.index');
-    }
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/dashboard', function () {
+        $today = now()->startOfDay();
 
-    Gate::authorize('view-sales-report');
+        return view('dashboard', [
+            'todayRevenue' => (float) Transaction::whereBetween('created_at', [$today, now()])->sum('grand_total'),
+            'todayTransactionCount' => Transaction::whereBetween('created_at', [$today, now()])->count(),
+            'productCount' => Product::where('is_active', true)->count(),
+            'lowStockCount' => Product::where('is_active', true)->where('stock', '<=', 5)->count(),
+            'recentTransactions' => Transaction::with('cashier')->latest()->take(5)->get(),
+            'lowStockProducts' => Product::where('is_active', true)->where('stock', '<=', 5)->orderBy('stock')->orderBy('name')->limit(5)->get(),
+        ]);
+    })->name('dashboard');
 
-    $today = now()->startOfDay();
+    Route::get('/admin/dashboard', function () {
+        return redirect()->route('dashboard');
+    })->name('admin.dashboard');
 
-    return view('dashboard', [
-        'productCount' => Product::where('is_active', true)->count(),
-        'lowStockCount' => Product::where('is_active', true)->where('stock', '<=', 5)->count(),
-        'todayTransactionCount' => Transaction::where('created_at', '>=', $today)->count(),
-        'todayRevenue' => Transaction::where('created_at', '>=', $today)
-            ->selectRaw('COALESCE(SUM(CASE WHEN grand_total > 0 THEN grand_total ELSE total_harga END), 0) as total')
-            ->value('total') ?? 0,
-        'recentTransactions' => Transaction::with('cashier')->latest()->limit(6)->get(),
-        'lowStockProducts' => Product::where('is_active', true)->where('stock', '<=', 5)
-            ->orderBy('stock')->limit(5)->get(),
-    ]);
-})->middleware(['auth', 'role:admin'])->name('dashboard');
-
-Route::get('/admin/dashboard', function () {
-    return redirect()->route('dashboard');
-})->middleware(['auth', 'role:admin'])->name('admin.dashboard');
+    Route::resource('products', ProductController::class);
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -47,19 +41,15 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::resource('products', ProductController::class)
-    ->middleware(['auth', 'admin']);
-
-Route::middleware(['auth', 'role:cashier'])->group(function () {
-    Route::get('/kasir', [TransactionController::class, 'index'])->name('transactions.index');
-    Route::post('/kasir', [TransactionController::class, 'store'])->name('transactions.store');
-    Route::get('/kasir/{transaction}/receipt', [TransactionController::class, 'receipt'])
-        ->middleware('can:view,transaction')
-        ->name('transactions.receipt');
-    Route::post('/kasir/hold', [TransactionController::class, 'hold'])->name('transactions.hold');
-    Route::get('/kasir/held/list', [TransactionController::class, 'held'])->name('transactions.held');
-    Route::post('/kasir/held/{heldTransaction}/resume', [TransactionController::class, 'resume'])->name('transactions.resume');
-    Route::delete('/kasir/held/{heldTransaction}', [TransactionController::class, 'cancel'])->name('transactions.cancel-held');
+Route::middleware(['auth', 'kasir'])->group(function () {
+    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
+    Route::get('/transactions/{transaction}/receipt', [TransactionController::class, 'receipt'])->name('transactions.receipt');
+    Route::post('/transactions/hold', [TransactionController::class, 'hold'])->name('transactions.hold');
+    Route::get('/transactions/held', [TransactionController::class, 'held'])->name('transactions.held');
+    Route::post('/transactions/{heldTransaction}/resume', [TransactionController::class, 'resume'])->name('transactions.resume');
+    Route::delete('/transactions/{heldTransaction}/cancel-held', [TransactionController::class, 'cancel'])
+        ->name('transactions.cancel-held');
 });
 
 require __DIR__.'/auth.php';

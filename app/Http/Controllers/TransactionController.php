@@ -129,6 +129,8 @@ class TransactionController extends Controller
 
     public function receipt(Transaction $transaction)
     {
+        abort_unless(Auth::id() === $transaction->user_id, 403, 'Akses Ditolak!');
+
         $transaction->load(['details', 'cashier']);
 
         return view('transactions.receipt', compact('transaction'));

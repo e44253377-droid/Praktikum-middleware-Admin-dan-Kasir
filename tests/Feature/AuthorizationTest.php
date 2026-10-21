@@ -65,13 +65,16 @@ class AuthorizationTest extends TestCase
         $response = $this->actingAs(User::factory()->create(['role' => 'cashier']))
             ->get(route('transactions.index'));
 
-        $response->assertOk()->assertViewHas('posProducts', function (array $products): bool {
-            $productsByName = collect($products)->keyBy('name');
+        $response->assertOk()
+            ->assertSee('__HELD_TRANSACTION_ID__')
+            ->assertDontSee('/kasir/held/')
+            ->assertViewHas('posProducts', function (array $products): bool {
+                $productsByName = collect($products)->keyBy('name');
 
-            return $productsByName['Espresso']['image'] === asset('images/cafe-menu/espresso.jpg')
-                && $productsByName['Bakso']['image'] === asset('storage/products/bakso.jpg')
-                && $productsByName['Menu tanpa foto']['image'] === null;
-        });
+                return $productsByName['Espresso']['image'] === asset('images/cafe-menu/espresso.jpg')
+                    && $productsByName['Bakso']['image'] === asset('storage/products/bakso.jpg')
+                    && $productsByName['Menu tanpa foto']['image'] === null;
+            });
     }
 
     public function test_only_admins_can_access_the_sales_dashboard(): void
