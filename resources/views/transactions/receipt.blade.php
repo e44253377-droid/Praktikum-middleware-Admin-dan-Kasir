@@ -12,6 +12,7 @@ body{font:12px/1.4 Arial,sans-serif;margin:0;color:#111}.receipt{width:72mm;marg
     <p class="center muted">Terima kasih atas kunjungan Anda.</p>
     <div class="receipt-actions">
         <button class="print-button" onclick="window.print()">Cetak Lagi</button>
+        <a class="back-button" href="{{ route('orders.invoice', $transaction) }}">Unduh Invoice</a>
         <a class="back-button" href="{{ route('transactions.index') }}">Kembali ke Kasir</a>
     </div>
 </div></body></html>

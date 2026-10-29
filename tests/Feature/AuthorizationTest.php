@@ -135,6 +135,52 @@ class AuthorizationTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_cashiers_can_only_download_their_own_invoices(): void
+    {
+        $owner = User::factory()->create(['role' => 'cashier']);
+        $otherCashier = User::factory()->create(['role' => 'cashier']);
+        $product = Product::create([
+            'name' => 'Kopi Susu',
+            'category' => 'Kopi',
+            'price' => 18000,
+            'stock' => 10,
+        ]);
+        $transaction = Transaction::create([
+            'kode_transaksi' => 'TRX-INV-001',
+            'transaction_number' => 'TRX-INV-001',
+            'user_id' => $owner->id,
+            'customer_type' => 'Umum',
+            'subtotal' => 18000,
+            'grand_total' => 18000,
+            'paid_amount' => 20000,
+            'change_amount' => 2000,
+            'total_harga' => 18000,
+            'metode_bayar' => 'Tunai',
+            'payment_method' => 'Tunai',
+        ]);
+        $transaction->details()->create([
+            'product_id' => $product->id,
+            'product_code' => 'KOPI-001',
+            'product_name' => 'Kopi Susu',
+            'price' => 18000,
+            'qty' => 1,
+            'discount' => 0,
+            'subtotal' => 18000,
+            'harga' => 18000,
+        ]);
+
+        $response = $this->actingAs($owner)
+            ->get(route('orders.invoice', $transaction));
+
+        $response->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF-', $response->getContent());
+
+        $this->actingAs($otherCashier)
+            ->get(route('orders.invoice', $transaction))
+            ->assertForbidden();
+    }
+
     public function test_cashiers_can_only_list_and_resume_their_own_held_transactions(): void
     {
         $owner = User::factory()->create(['role' => 'cashier']);

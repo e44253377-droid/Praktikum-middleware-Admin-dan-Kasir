@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\OrderPlaced;
 use App\Models\HeldTransaction;
 use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\TransactionDetail;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -121,6 +123,8 @@ class TransactionController extends Controller
             return $transaction;
         });
 
+        OrderPlaced::dispatch($transaction);
+
         return response()->json([
             'message' => 'Transaksi berhasil disimpan.',
             'receipt_url' => route('transactions.receipt', $transaction),
@@ -197,5 +201,15 @@ class TransactionController extends Controller
         $sequence = $last ? ((int) substr($last, -3)) + 1 : 1;
 
         return $prefix.str_pad((string) $sequence, 3, '0', STR_PAD_LEFT);
+    }
+    public function invoice(Transaction $order)
+    {
+        abort_unless(Auth::id() === $order->user_id, 403, 'Akses Ditolak!');
+
+        $order->load(['details', 'cashier']);
+
+        return Pdf::loadView('invoices.invoice', ['invoice' => $order])
+            ->setPaper('a4')
+            ->download('invoice_'.$order->id.'.pdf');
     }
 }

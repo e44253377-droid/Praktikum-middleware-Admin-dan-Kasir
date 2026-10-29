@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Intervention\image\ImageManager;
+use Intervention\image\Drivers\Gd\Driver;
 
 class ProductController extends Controller
 {
@@ -25,8 +27,24 @@ class ProductController extends Controller
         $data = $this->validatedData($request);
 
         if ($request->hasFile('image')) {
-            $data['image'] = $request->file('image')->store('products', 'public');
-        }
+    $file = $request->file('image');
+    $original = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+    $ext = strtolower($file->getClientOriginalExtension());
+    $filename = time() . '_' . preg_replace('/[^A-Za-z0-9-_]/', '_', $original) . '.' . $ext;
+    $path = 'products/' . $filename;
+
+    $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+    $image = $manager->read($file->getRealPath())->cover(800, 800);
+
+    if ($ext === 'png') {
+        $encoded = $image->toPng();
+    } else {
+        $encoded = $image->toJpeg(85);
+    }
+
+    \Illuminate\Support\Facades\Storage::disk('public')->put($path, $encoded);
+    $data['image'] = $path;
+}
 
         Product::create($data);
 

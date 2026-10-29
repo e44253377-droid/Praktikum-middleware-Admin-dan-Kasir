@@ -50,6 +50,8 @@ Route::middleware(['auth', 'kasir'])->group(function () {
     Route::post('/transactions/{heldTransaction}/resume', [TransactionController::class, 'resume'])->name('transactions.resume');
     Route::delete('/transactions/{heldTransaction}/cancel-held', [TransactionController::class, 'cancel'])
         ->name('transactions.cancel-held');
+
+    Route::get('transactions/{order}/invoice', [TransactionController::class, 'invoice'])->name('orders.invoice');
 });
 
 require __DIR__.'/auth.php';
